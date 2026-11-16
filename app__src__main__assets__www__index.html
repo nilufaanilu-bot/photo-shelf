@@ -1,0 +1,1139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Photo Shelf</title>
+<style>
+/* Layout: one calm column. Folder cards (with a tab and a cover photo) above a tight square photo grid. Quiet neutrals, one cobalt accent. */
+:root {
+  color-scheme: light;
+  --bg: #F2F5F3;
+  --surface: #FFFFFF;
+  --ink: #18221E;
+  --muted: #5B6A64;
+  --line: #D9E1DD;
+  --accent: #2F5BE0;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E6ECFD;
+  --danger: #C23B3B;
+  --danger-ink: #FFFFFF;
+  --folder: #E3EAE6;
+  --folder-tab: #D1DBD6;
+  --scrim: rgba(18, 28, 24, .45);
+  --shadow: 0 1px 2px rgba(20, 30, 26, .06), 0 6px 18px rgba(20, 30, 26, .06);
+  --shadow-lg: 0 10px 40px rgba(20, 30, 26, .22);
+  --on-photo: #FFFFFF;
+  --photo-shade: rgba(0, 0, 0, .38);
+  --lb-bg: #0B100E;
+  --lb-ink: #EEF3F0;
+  --lb-muted: #9DACA6;
+  --lb-btn: rgba(255, 255, 255, .09);
+  --lb-btn-line: rgba(255, 255, 255, .2);
+  --font-display: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1513;
+    --surface: #172120;
+    --ink: #E7EFEB;
+    --muted: #95A69F;
+    --line: #263330;
+    --accent: #86A3FF;
+    --accent-ink: #0B1330;
+    --accent-soft: #1D2A52;
+    --danger: #FF8E8E;
+    --danger-ink: #2A0C0C;
+    --folder: #1D2926;
+    --folder-tab: #2A3A35;
+    --scrim: rgba(0, 0, 0, .6);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1513;
+  --surface: #172120;
+  --ink: #E7EFEB;
+  --muted: #95A69F;
+  --line: #263330;
+  --accent: #86A3FF;
+  --accent-ink: #0B1330;
+  --accent-soft: #1D2A52;
+  --danger: #FF8E8E;
+  --danger-ink: #2A0C0C;
+  --folder: #1D2926;
+  --folder-tab: #2A3A35;
+  --scrim: rgba(0, 0, 0, .6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html.locked { overflow: hidden; }
+body {
+  margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--font-body);
+  -webkit-text-size-adjust: 100%;
+}
+h1, h2 { text-wrap: balance; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { max-width: 1120px; margin: 0 auto; padding-block: 20px 110px; min-width: 0; }
+.ic { display: inline-flex; flex: none; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font: 600 18px/1 var(--font-display); letter-spacing: -.01em; }
+.mark { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.totals { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 20px; font-size: 14px; color: var(--muted); min-width: 0; }
+.crumbs a { color: var(--accent); text-decoration: none; overflow-wrap: anywhere; }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs [aria-current] { overflow-wrap: anywhere; }
+
+.bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px 18px; flex-wrap: wrap; margin-top: 10px; }
+h1 { margin: 0; min-width: 0; font: 600 clamp(28px, 6vw, 40px)/1.08 var(--font-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn {
+  appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: 500 14px/1 var(--font-body); min-height: 40px; padding: 0 14px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none;
+}
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.06); border-color: var(--accent); }
+.btn.danger { color: var(--danger); }
+.btn.danger-solid { background: var(--danger); border-color: var(--danger); color: var(--danger-ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* sections */
+.section { margin-top: 30px; }
+.section-h { display: flex; align-items: baseline; gap: 8px; margin: 0 0 12px; font: 600 12px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.section-h .count { font-variant-numeric: tabular-nums; font-weight: 500; }
+
+.folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 24px 14px; padding-top: 10px; }
+.folder { position: relative; display: block; min-width: 0; color: inherit; text-decoration: none; }
+.folder .tab { position: absolute; left: 0; top: -10px; width: 46%; height: 12px; background: var(--folder-tab); border-radius: 8px 8px 0 0; }
+.folder .fbody { position: relative; display: block; background: var(--folder); border-radius: 0 12px 12px 12px; padding: 8px 8px 10px; box-shadow: var(--shadow); }
+.folder:hover .fbody, .folder:focus-visible .fbody { background: var(--folder-tab); }
+.folder .cover { display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 8px; background: var(--surface); color: var(--muted); overflow: hidden; }
+.folder .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.folder .fname { display: block; margin-top: 8px; padding: 0 2px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder .fmeta { display: block; padding: 0 2px; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; }
+.tile { position: relative; display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: var(--folder); color: var(--muted); cursor: pointer; }
+.tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile .ph { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px; padding: 8px; font-size: 11px; text-align: center; overflow: hidden; }
+.tile .ph span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .check { position: absolute; top: 6px; left: 6px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--on-photo); background: var(--photo-shade); display: grid; place-items: center; color: transparent; }
+.tile.is-selected { outline: 3px solid var(--accent); outline-offset: -3px; }
+.tile.is-selected .check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.empty { margin-top: 28px; padding: 44px 20px; border: 1.5px dashed var(--line); border-radius: 16px; text-align: center; display: grid; justify-items: center; gap: 8px; }
+.empty .ic-big { width: 52px; height: 52px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; margin-bottom: 6px; }
+.empty h2 { margin: 0; font: 600 22px/1.2 var(--font-display); letter-spacing: -.01em; }
+.empty p { margin: 0; color: var(--muted); max-width: 44ch; }
+.empty .actions { justify-content: center; margin-top: 12px; }
+.loading { margin-top: 40px; color: var(--muted); }
+
+.note { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; max-width: 64ch; }
+.note p { margin: 0 0 4px; }
+.note.warn p:first-child { color: var(--danger); }
+
+/* floating bars */
+.selbar {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 40;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px;
+  width: max-content; max-width: calc(100vw - 24px);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; box-shadow: var(--shadow-lg);
+}
+.selbar .n { padding: 0 8px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 80;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  max-width: calc(100vw - 32px); padding: 10px 14px; border-radius: 10px;
+  background: var(--ink); color: var(--bg); font-size: 14px; box-shadow: var(--shadow-lg);
+}
+.drop {
+  position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; padding: 24px; text-align: center;
+  background: var(--accent-soft); color: var(--accent); font: 600 22px/1.3 var(--font-display);
+  border: 3px dashed var(--accent); opacity: .96;
+}
+
+/* dialog */
+.scrim {
+  position: fixed; inset: 0; z-index: 60; background: var(--scrim); display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.dialog { width: min(440px, 100%); max-height: 100%; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-lg); }
+.dialog h2 { margin: 0 0 12px; font: 600 20px/1.2 var(--font-display); letter-spacing: -.01em; }
+.dialog p { margin: 0; color: var(--muted); }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.form { display: grid; gap: 8px; }
+.form label { font-weight: 600; font-size: 14px; }
+.form input {
+  width: 100%; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); font: 16px var(--font-body);
+}
+.err { min-height: 1.3em; margin: 0; color: var(--danger) !important; font-size: 13.5px; }
+.pick { display: flex; flex-direction: column; gap: 2px; max-height: min(50vh, 360px); overflow: auto; margin: 0 -6px; padding: 0 6px; }
+.pick button {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink); font: 500 15px var(--font-body); text-align: left; cursor: pointer;
+}
+.pick button span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick button:hover:not(:disabled) { background: var(--accent-soft); }
+.pick button:disabled { color: var(--muted); cursor: default; }
+
+/* photo viewer */
+.lb {
+  position: fixed; inset: 0; z-index: 50; background: var(--lb-bg); color: var(--lb-ink);
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+}
+.lb-top { display: flex; align-items: center; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; }
+.lb-info { flex: 1; min-width: 0; }
+.lb-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-meta { color: var(--lb-muted); font-size: 13px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-count { color: var(--lb-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.lb .btn { background: var(--lb-btn); border-color: var(--lb-btn-line); color: var(--lb-ink); }
+.lb .btn:hover:not(:disabled) { border-color: var(--lb-ink); }
+.lb .btn.danger { color: #FF9B9B; }
+.lb-stage { position: relative; min-height: 0; margin: 0 8px; touch-action: pan-y; }
+.lb-stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.lb-msg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 20px; text-align: center; color: var(--lb-muted); }
+.lb-bar { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .folder .fbody { transition: background-color .15s, border-color .15s; }
+  .tile img { transition: filter .15s; }
+}
+@media (hover: hover) { .tile:hover img { filter: brightness(1.07); } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><span class="mark" id="brand-mark"></span><span>Photo Shelf</span></div>
+    <div class="totals" id="totals"></div>
+  </header>
+  <nav class="crumbs" id="crumbs" aria-label="Folder path" hidden></nav>
+  <div class="bar">
+    <h1 id="title">Gallery</h1>
+    <div class="actions" id="actions"></div>
+  </div>
+  <main id="content"><p class="loading">Opening your gallery…</p></main>
+  <footer class="note" id="note"></footer>
+</div>
+
+<div class="selbar" id="selbar" hidden></div>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <div class="lb-top">
+    <div class="lb-info"><div class="lb-name" id="lb-name"></div><div class="lb-meta" id="lb-meta"></div></div>
+    <div class="lb-count" id="lb-count"></div>
+    <button class="btn" id="lb-close" type="button" aria-label="Close viewer"></button>
+  </div>
+  <div class="lb-stage" id="lb-stage">
+    <img id="lb-img" alt="" hidden>
+    <p class="lb-msg" id="lb-msg">Loading…</p>
+  </div>
+  <div class="lb-bar">
+    <button class="btn" id="lb-prev" type="button"></button>
+    <button class="btn" id="lb-move" type="button"></button>
+    <button class="btn danger" id="lb-del" type="button"></button>
+    <button class="btn" id="lb-next" type="button"></button>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="drop" id="drop" hidden></div>
+<input type="file" id="file-in" accept="image/*" multiple hidden>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- small helpers ---------- */
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+
+  function h(tag, props) {
+    var n = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        var v = props[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === 'class') n.className = v;
+        else if (k === 'text') n.textContent = v;
+        else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2).toLowerCase(), v);
+        else n.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    var kids = Array.prototype.slice.call(arguments, 2);
+    var flat = [].concat.apply([], kids);
+    flat.forEach(function (kid) {
+      if (kid === null || kid === undefined || kid === false) return;
+      n.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    });
+    return n;
+  }
+
+  var PATHS = {
+    folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    folderPlus: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10.5v5M9.5 13h5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    left: '<path d="m15 5-7 7 7 7"/>',
+    right: '<path d="m9 5 7 7-7 7"/>',
+    trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+    move: '<path d="M4 12h14M13 6l6 6-6 6"/>',
+    pencil: '<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>',
+    select: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/>',
+    images: '<rect x="3" y="5" width="14" height="14" rx="2"/><circle cx="8" cy="10" r="1.4"/><path d="m17 14-3.5-3.5L6 18M20 8v9a2 2 0 0 1-2 2"/>'
+  };
+  function icon(name, size) {
+    var s = size || 18;
+    var span = document.createElement('span');
+    span.className = 'ic';
+    span.setAttribute('aria-hidden', 'true');
+    span.innerHTML = '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + PATHS[name] + '</svg>';
+    return span;
+  }
+  function setBtn(btn, ic, label) {
+    btn.replaceChildren();
+    btn.append(icon(ic));
+    if (label) btn.append(document.createTextNode(label));
+  }
+
+  function uid(prefix) { return prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+  function fmtBytes(b) {
+    if (!b && b !== 0) return '';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return Math.round(b / 1024) + ' KB';
+    if (b < 1073741824) return (b / 1048576).toFixed(b < 10485760 ? 1 : 0) + ' MB';
+    return (b / 1073741824).toFixed(1) + ' GB';
+  }
+  function fmtDate(ts) {
+    try { return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch (e) { return ''; }
+  }
+  function isQuota(e) { return !!e && (e.name === 'QuotaExceededError' || e.code === 22); }
+
+  var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+  /* ---------- storage (IndexedDB, with a memory fallback) ---------- */
+  var Store = (function () {
+    var db = null;
+    var mem = { folders: new Map(), photos: new Map(), originals: new Map() };
+
+    function open() {
+      return new Promise(function (resolve) {
+        var done = false;
+        function finish(ok) { if (!done) { done = true; resolve(ok); } }
+        try {
+          if (!window.indexedDB) throw new Error('no indexedDB');
+          var req = indexedDB.open('photo-shelf', 1);
+          req.onupgradeneeded = function () {
+            var d = req.result;
+            d.createObjectStore('folders', { keyPath: 'id' });
+            d.createObjectStore('photos', { keyPath: 'id' });
+            d.createObjectStore('originals');
+          };
+          req.onsuccess = function () {
+            db = req.result;
+            db.onversionchange = function () { db.close(); };
+            finish(true);
+          };
+          req.onerror = function () { finish(false); };
+          req.onblocked = function () { finish(false); };
+          setTimeout(function () { finish(false); }, 5000);
+        } catch (e) { finish(false); }
+      });
+    }
+
+    function run(names, mode, work) {
+      return new Promise(function (resolve, reject) {
+        var t = db.transaction(names, mode);
+        var result;
+        t.oncomplete = function () { resolve(result instanceof IDBRequest ? result.result : result); };
+        t.onerror = function () { reject(t.error || new Error('Storage error')); };
+        t.onabort = function () { reject(t.error || new Error('Storage aborted')); };
+        result = work.apply(null, names.map(function (n) { return t.objectStore(n); }));
+      });
+    }
+
+    return {
+      open: open,
+      isPersistent: function () { return !!db; },
+      loadAll: async function () {
+        if (!db) return { folders: Array.from(mem.folders.values()), photos: Array.from(mem.photos.values()) };
+        var folders = await run(['folders'], 'readonly', function (s) { return s.getAll(); });
+        var photos = await run(['photos'], 'readonly', function (s) { return s.getAll(); });
+        return { folders: folders, photos: photos };
+      },
+      saveFolder: async function (f) {
+        if (!db) { mem.folders.set(f.id, f); return; }
+        await run(['folders'], 'readwrite', function (s) { s.put(f); });
+      },
+      savePhoto: async function (meta, original) {
+        if (!db) { mem.photos.set(meta.id, meta); mem.originals.set(meta.id, original); return; }
+        await run(['photos', 'originals'], 'readwrite', function (p, o) { p.put(meta); o.put(original, meta.id); });
+      },
+      updatePhoto: async function (meta) {
+        if (!db) { mem.photos.set(meta.id, meta); return; }
+        await run(['photos'], 'readwrite', function (s) { s.put(meta); });
+      },
+      getOriginal: async function (id) {
+        if (!db) return mem.originals.get(id) || null;
+        var r = await run(['originals'], 'readonly', function (s) { return s.get(id); });
+        return r || null;
+      },
+      removeTree: async function (folderIds, photoIds) {
+        if (!db) {
+          folderIds.forEach(function (i) { mem.folders.delete(i); });
+          photoIds.forEach(function (i) { mem.photos.delete(i); mem.originals.delete(i); });
+          return;
+        }
+        await run(['folders', 'photos', 'originals'], 'readwrite', function (f, p, o) {
+          folderIds.forEach(function (i) { f.delete(i); });
+          photoIds.forEach(function (i) { p.delete(i); o.delete(i); });
+        });
+      }
+    };
+  })();
+
+  /* ---------- app state ---------- */
+  var state = {
+    folders: new Map(),
+    photos: new Map(),
+    cur: null,
+    selecting: false,
+    selected: new Set(),
+    busy: false
+  };
+
+  function childFolders(parentId) {
+    return Array.from(state.folders.values())
+      .filter(function (f) { return f.parentId === parentId; })
+      .sort(function (a, b) { return collator.compare(a.name, b.name); });
+  }
+  function photosIn(folderId) {
+    return Array.from(state.photos.values())
+      .filter(function (p) { return p.folderId === folderId; })
+      .sort(function (a, b) { return b.addedAt - a.addedAt; });
+  }
+  function descendantIds(id) {
+    var out = new Set([id]);
+    var frontier = [id];
+    while (frontier.length) {
+      var next = [];
+      state.folders.forEach(function (f) {
+        if (f.parentId !== null && frontier.indexOf(f.parentId) !== -1 && !out.has(f.id)) {
+          out.add(f.id);
+          next.push(f.id);
+        }
+      });
+      frontier = next;
+    }
+    return out;
+  }
+  function treeStats(id) {
+    var ids = descendantIds(id);
+    var count = 0, cover = null;
+    state.photos.forEach(function (p) {
+      if (ids.has(p.folderId)) {
+        count++;
+        if (p.thumb && (!cover || p.addedAt > cover.addedAt)) cover = p;
+      }
+    });
+    return { folders: ids.size - 1, photos: count, cover: cover };
+  }
+  function pathTo(id) {
+    var path = [];
+    var guard = 0;
+    while (id && guard++ < 100) {
+      var f = state.folders.get(id);
+      if (!f) break;
+      path.unshift(f);
+      id = f.parentId;
+    }
+    return path;
+  }
+  function nameTaken(name, parentId, exceptId) {
+    var n = name.toLowerCase();
+    return Array.from(state.folders.values()).some(function (f) {
+      return f.parentId === parentId && f.id !== exceptId && f.name.toLowerCase() === n;
+    });
+  }
+
+  /* thumbnail object URLs */
+  var urlCache = new Map();
+  function thumbURL(p) {
+    var u = urlCache.get(p.id);
+    if (!u) { u = URL.createObjectURL(p.thumb); urlCache.set(p.id, u); }
+    return u;
+  }
+  function dropThumbURL(id) {
+    var u = urlCache.get(id);
+    if (u) { URL.revokeObjectURL(u); urlCache.delete(id); }
+  }
+
+  /* ---------- toast ---------- */
+  var toastTimer = null;
+  function toast(msg, sticky) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    if (!sticky) toastTimer = setTimeout(function () { t.hidden = true; }, 3800);
+  }
+  function hideToast() { clearTimeout(toastTimer); $('#toast').hidden = true; }
+
+  /* ---------- routing ---------- */
+  function parseHash() {
+    var m = /^#(f-[a-z0-9]+)$/.exec(location.hash);
+    return m && state.folders.has(m[1]) ? m[1] : null;
+  }
+  function navigate(id) { location.hash = id || ''; }
+  function onRoute() {
+    state.cur = parseHash();
+    state.selecting = false;
+    state.selected.clear();
+    closeLightbox();
+    closeModal(true);
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    var cur = state.cur ? state.folders.get(state.cur) : null;
+    $('#totals').textContent = plural(state.photos.size, 'photo') + ' · ' + plural(state.folders.size, 'folder');
+    $('#title').textContent = cur ? cur.name : 'Gallery';
+
+    var crumbs = $('#crumbs');
+    crumbs.replaceChildren();
+    if (cur) {
+      crumbs.hidden = false;
+      crumbs.append(h('a', { href: '#', text: 'Gallery' }));
+      var path = pathTo(cur.id);
+      path.forEach(function (f, i) {
+        crumbs.append(h('span', { 'aria-hidden': 'true', text: '/' }));
+        if (i === path.length - 1) crumbs.append(h('span', { 'aria-current': 'page', text: f.name }));
+        else crumbs.append(h('a', { href: '#' + f.id, text: f.name }));
+      });
+    } else {
+      crumbs.hidden = true;
+    }
+
+    var subs = childFolders(state.cur);
+    var photos = photosIn(state.cur);
+
+    var actions = $('#actions');
+    actions.replaceChildren();
+    var addBtn = h('button', { class: 'btn primary', type: 'button', onClick: pickFiles });
+    setBtn(addBtn, 'plus', 'Add photos');
+    var newBtn = h('button', { class: 'btn', type: 'button', onClick: newFolderDialog });
+    setBtn(newBtn, 'folderPlus', 'New folder');
+    actions.append(addBtn, newBtn);
+    if (photos.length) {
+      var selBtn = h('button', { class: 'btn' + (state.selecting ? ' on' : ''), type: 'button', 'aria-pressed': String(state.selecting), onClick: function () { setSelecting(!state.selecting); } });
+      setBtn(selBtn, 'select', 'Select');
+      actions.append(selBtn);
+    }
+    if (cur) {
+      var renBtn = h('button', { class: 'btn', type: 'button', onClick: function () { renameDialog(cur); } });
+      setBtn(renBtn, 'pencil', 'Rename');
+      var delBtn = h('button', { class: 'btn danger', type: 'button', onClick: function () { deleteFolderDialog(cur); } });
+      setBtn(delBtn, 'trash', 'Delete folder');
+      actions.append(renBtn, delBtn);
+    }
+
+    var content = $('#content');
+    content.replaceChildren();
+    if (!subs.length && !photos.length) {
+      content.append(emptyState(cur));
+    } else {
+      if (subs.length) {
+        content.append(h('section', { class: 'section' },
+          h('h2', { class: 'section-h' }, 'Folders', h('span', { class: 'count', text: String(subs.length) })),
+          h('div', { class: 'folders' }, subs.map(folderCard))));
+      }
+      if (photos.length) {
+        var ids = photos.map(function (p) { return p.id; });
+        content.append(h('section', { class: 'section' },
+          h('h2', { class: 'section-h' }, 'Photos', h('span', { class: 'count', text: String(photos.length) })),
+          h('div', { class: 'photos' }, photos.map(function (p) { return tile(p, ids); }))));
+      }
+    }
+
+    renderNote();
+    updateSelbar();
+  }
+
+  function emptyState(cur) {
+    var addBtn = h('button', { class: 'btn primary', type: 'button', onClick: pickFiles });
+    setBtn(addBtn, 'plus', 'Add photos');
+    var newBtn = h('button', { class: 'btn', type: 'button', onClick: newFolderDialog });
+    setBtn(newBtn, 'folderPlus', 'New folder');
+    var big = h('span', { class: 'ic-big' });
+    big.append(icon(cur ? 'folder' : 'images', 26));
+    return h('div', { class: 'empty' },
+      big,
+      h('h2', { text: cur ? 'This folder is empty' : 'Your gallery is empty' }),
+      h('p', { text: cur
+        ? 'Add photos here, or make a subfolder to sort them further.'
+        : 'Make a folder, then add photos to it. Only photos you add here are kept in this gallery.' }),
+      h('div', { class: 'actions' }, addBtn, newBtn));
+  }
+
+  function folderCard(f) {
+    var st = treeStats(f.id);
+    var meta = plural(st.photos, 'photo') + (st.folders ? ' · ' + plural(st.folders, 'folder') : '');
+    var cover = h('span', { class: 'cover' });
+    if (st.cover) cover.append(h('img', { src: thumbURL(st.cover), alt: '', loading: 'lazy', decoding: 'async' }));
+    else cover.append(icon('folder', 30));
+    return h('a', { class: 'folder', href: '#' + f.id },
+      h('span', { class: 'tab' }),
+      h('span', { class: 'fbody' }, cover, h('span', { class: 'fname', text: f.name }), h('span', { class: 'fmeta', text: meta })));
+  }
+
+  function tile(p, ids) {
+    var sel = state.selected.has(p.id);
+    var b = h('button', {
+      class: 'tile' + (sel ? ' is-selected' : ''),
+      type: 'button',
+      'data-id': p.id,
+      'aria-label': p.name,
+      'aria-pressed': state.selecting ? String(sel) : null,
+      onClick: function () {
+        if (state.selecting) toggleSel(p.id);
+        else openLightbox(ids, p.id, b);
+      }
+    });
+    if (p.thumb) b.append(h('img', { src: thumbURL(p), alt: '', loading: 'lazy', decoding: 'async' }));
+    else b.append(h('span', { class: 'ph' }, icon('image', 24), h('span', { text: p.name })));
+    if (state.selecting) b.append(h('span', { class: 'check' }, icon('check', 14)));
+    return b;
+  }
+
+  function renderNote() {
+    var note = $('#note');
+    note.replaceChildren();
+    if (Store.isPersistent()) {
+      note.classList.remove('warn');
+      note.append(h('p', { text: 'Photos stay inside this app on this phone. Nothing is uploaded anywhere.' }));
+      note.append(h('p', { id: 'usage', text: 'Uninstalling the app or clearing its data also removes your photos.' }));
+    } else {
+      note.classList.add('warn');
+      note.append(h('p', { text: 'Storage is blocked, so photos will disappear when you close the app.' }));
+    }
+  }
+  async function updateUsage() {
+    try {
+      if (!Store.isPersistent() || !navigator.storage || !navigator.storage.estimate) return;
+      var e = await navigator.storage.estimate();
+      var u = $('#usage');
+      if (u && e && e.usage != null) u.textContent = 'Using ' + fmtBytes(e.usage) + '. Uninstalling the app or clearing its data also removes your photos.';
+    } catch (e) { /* optional */ }
+  }
+
+  /* ---------- selection ---------- */
+  function setSelecting(on) {
+    state.selecting = on;
+    state.selected.clear();
+    render();
+  }
+  function toggleSel(id) {
+    if (state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
+    var t = $('.tile[data-id="' + id + '"]');
+    if (t) {
+      var on = state.selected.has(id);
+      t.classList.toggle('is-selected', on);
+      t.setAttribute('aria-pressed', String(on));
+    }
+    updateSelbar();
+  }
+  function updateSelbar() {
+    var bar = $('#selbar');
+    if (!state.selecting) { bar.hidden = true; return; }
+    bar.hidden = false;
+    bar.replaceChildren();
+    var n = state.selected.size;
+    var all = photosIn(state.cur).length;
+    var allBtn = h('button', { class: 'btn', type: 'button', onClick: function () {
+      photosIn(state.cur).forEach(function (p) { state.selected.add(p.id); });
+      render();
+    } }, n === all ? 'All selected' : 'Select all');
+    if (n === all) allBtn.disabled = true;
+    var mv = h('button', { class: 'btn', type: 'button', onClick: function () { moveDialog(Array.from(state.selected)); } });
+    setBtn(mv, 'move', 'Move');
+    var del = h('button', { class: 'btn danger', type: 'button', onClick: function () { deletePhotosDialog(Array.from(state.selected)); } });
+    setBtn(del, 'trash', 'Delete');
+    if (!n) { mv.disabled = true; del.disabled = true; }
+    var done = h('button', { class: 'btn', type: 'button', onClick: function () { setSelecting(false); } }, 'Done');
+    bar.append(h('span', { class: 'n', text: n + ' selected' }), allBtn, mv, del, done);
+  }
+
+  /* ---------- modal ---------- */
+  var modalState = null;
+  function focusables(root) {
+    return Array.prototype.slice.call(root.querySelectorAll('button:not(:disabled), input, a[href]'));
+  }
+  function updateInert() {
+    var modal = !!modalState;
+    var lbOpen = !$('#lb').hidden;
+    $('#app').inert = modal || lbOpen;
+    $('#selbar').inert = modal || lbOpen;
+    $('#lb').inert = modal;
+    document.documentElement.classList.toggle('locked', modal || lbOpen);
+  }
+  function openModal(opts) {
+    closeModal(true);
+    var opener = document.activeElement;
+    var dlg = h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dlg-title', tabindex: '-1' },
+      h('h2', { id: 'dlg-title', text: opts.title }),
+      opts.content,
+      h('div', { class: 'dlg-actions' }, opts.actions));
+    var scrim = h('div', { class: 'scrim', onClick: function (e) { if (e.target === scrim) closeModal(); } }, dlg);
+    $('#modal-root').append(scrim);
+    modalState = { scrim: scrim, dlg: dlg, opener: opener };
+    updateInert();
+    var first = opts.focus || dlg.querySelector('input') || dlg.querySelector('button:not(:disabled)') || dlg;
+    first.focus();
+    if (first.select) first.select();
+  }
+  function closeModal(silent) {
+    if (!modalState) return;
+    var op = modalState.opener;
+    modalState.scrim.remove();
+    modalState = null;
+    updateInert();
+    if (!silent && op && op.isConnected && op.focus) op.focus();
+  }
+
+  function cancelBtn() { return h('button', { class: 'btn', type: 'button', onClick: function () { closeModal(); } }, 'Cancel'); }
+
+  function confirmDialog(o) {
+    var go = h('button', { class: 'btn ' + (o.danger ? 'danger-solid' : 'primary'), type: 'button' }, o.confirmLabel);
+    go.addEventListener('click', async function () {
+      go.disabled = true;
+      try { await o.onConfirm(); closeModal(); }
+      catch (e) {
+        console.error(e);
+        closeModal();
+        toast('Something went wrong and nothing was changed. Please try again.');
+      }
+    });
+    openModal({ title: o.title, content: h('p', { text: o.message }), actions: [cancelBtn(), go], focus: null });
+  }
+
+  function nameDialog(o) {
+    var input = h('input', { type: 'text', id: 'name-input', maxlength: '60', autocomplete: 'off', 'aria-describedby': 'name-err' });
+    input.value = o.value || '';
+    var err = h('p', { class: 'err', id: 'name-err', role: 'alert' });
+    var form = h('form', { class: 'form', id: 'name-form', novalidate: true, onSubmit: async function (e) {
+      e.preventDefault();
+      var v = input.value.trim().replace(/\s+/g, ' ');
+      if (!v) { err.textContent = 'Type a name for the folder.'; input.focus(); return; }
+      if (nameTaken(v, o.parentId, o.exceptId || null)) { err.textContent = 'A folder with this name already exists here.'; input.focus(); return; }
+      try { await o.onSubmit(v); closeModal(); }
+      catch (ex) {
+        console.error(ex);
+        err.textContent = isQuota(ex) ? 'This phone is out of storage space.' : 'Could not save. Please try again.';
+      }
+    } }, h('label', { for: 'name-input', text: o.label }), input, err);
+    var go = h('button', { class: 'btn primary', type: 'submit', form: 'name-form' }, o.confirmLabel);
+    openModal({ title: o.title, content: form, actions: [cancelBtn(), go], focus: input });
+  }
+
+  /* ---------- folders ---------- */
+  function newFolderDialog() {
+    var parent = state.cur;
+    nameDialog({
+      title: parent ? 'New subfolder' : 'New folder',
+      label: 'Folder name',
+      confirmLabel: 'Create',
+      parentId: parent,
+      onSubmit: async function (name) {
+        var f = { id: uid('f'), parentId: parent, name: name, createdAt: Date.now() };
+        await Store.saveFolder(f);
+        state.folders.set(f.id, f);
+        render();
+        toast('Created “' + name + '”');
+      }
+    });
+  }
+  function renameDialog(f) {
+    nameDialog({
+      title: 'Rename folder',
+      label: 'Folder name',
+      value: f.name,
+      confirmLabel: 'Save',
+      parentId: f.parentId,
+      exceptId: f.id,
+      onSubmit: async function (name) {
+        var nf = Object.assign({}, f, { name: name });
+        await Store.saveFolder(nf);
+        state.folders.set(nf.id, nf);
+        render();
+      }
+    });
+  }
+  function deleteFolderDialog(f) {
+    var st = treeStats(f.id);
+    var parts = [];
+    if (st.folders) parts.push(plural(st.folders, 'folder') + ' inside it');
+    if (st.photos) parts.push(plural(st.photos, 'photo'));
+    var msg = parts.length
+      ? 'This also deletes ' + parts.join(' and ') + '. This cannot be undone.'
+      : 'This folder is empty. This cannot be undone.';
+    confirmDialog({
+      title: 'Delete “' + f.name + '”?',
+      message: msg,
+      confirmLabel: 'Delete folder',
+      danger: true,
+      onConfirm: async function () {
+        var ids = descendantIds(f.id);
+        var photoIds = [];
+        state.photos.forEach(function (p) { if (ids.has(p.folderId)) photoIds.push(p.id); });
+        await Store.removeTree(Array.from(ids), photoIds);
+        photoIds.forEach(function (id) { state.photos.delete(id); dropThumbURL(id); });
+        ids.forEach(function (id) { state.folders.delete(id); });
+        var parent = f.parentId;
+        toast('Deleted “' + f.name + '”');
+        if (state.cur && ids.has(state.cur)) navigate(parent);
+        else render();
+      }
+    });
+  }
+
+  /* ---------- photos: add ---------- */
+  var THUMB = 520;
+  async function makeThumb(file) {
+    var src, w, ht, cleanup = function () {};
+    try {
+      src = await createImageBitmap(file);
+      w = src.width; ht = src.height;
+      cleanup = function () { if (src.close) src.close(); };
+    } catch (e) {
+      var url = URL.createObjectURL(file);
+      cleanup = function () { URL.revokeObjectURL(url); };
+      var img = new Image();
+      img.src = url;
+      try { await img.decode(); } catch (e2) { cleanup(); throw e2; }
+      src = img; w = img.naturalWidth; ht = img.naturalHeight;
+    }
+    try {
+      if (!w || !ht) throw new Error('Empty image');
+      var scale = Math.min(1, THUMB / Math.max(w, ht));
+      var cw = Math.max(1, Math.round(w * scale));
+      var ch = Math.max(1, Math.round(ht * scale));
+      var c = document.createElement('canvas');
+      c.width = cw; c.height = ch;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.drawImage(src, 0, 0, cw, ch);
+      var thumb = await new Promise(function (res, rej) {
+        c.toBlob(function (b) { b ? res(b) : rej(new Error('Thumbnail failed')); }, 'image/jpeg', 0.82);
+      });
+      return { thumb: thumb, w: w, h: ht };
+    } finally { cleanup(); }
+  }
+
+  function pickFiles() { $('#file-in').click(); }
+
+  function looksLikeImage(f) {
+    return (f.type && f.type.indexOf('image/') === 0) || /\.(jpe?g|png|gif|webp|bmp|avif|heic|heif)$/i.test(f.name || '');
+  }
+
+  async function addFiles(list) {
+    var all = Array.prototype.slice.call(list);
+    var files = all.filter(looksLikeImage);
+    if (!files.length) { toast(all.length ? 'Only image files can be added.' : 'No photos were chosen.'); return; }
+    if (state.busy) { toast('Still adding photos. Please wait a moment.'); return; }
+    state.busy = true;
+    var target = state.cur;
+    var base = Date.now();
+    var added = 0, failed = 0, full = false;
+    for (var i = 0; i < files.length; i++) {
+      if (target && !state.folders.has(target)) break;
+      toast('Adding ' + (i + 1) + ' of ' + files.length + '…', true);
+      var f = files[i];
+      var info = { thumb: null, w: 0, h: 0 };
+      try { info = await makeThumb(f); } catch (e) { /* keep original without a preview */ }
+      var meta = {
+        id: uid('p'), folderId: target, name: f.name || 'Photo', type: f.type || 'image/*',
+        size: f.size, addedAt: base + (files.length - i), w: info.w, h: info.h, thumb: info.thumb
+      };
+      try {
+        await Store.savePhoto(meta, f);
+        state.photos.set(meta.id, meta);
+        added++;
+        if (state.cur === target) render();
+      } catch (e) {
+        console.error(e);
+        failed++;
+        if (isQuota(e)) { full = true; break; }
+      }
+    }
+    state.busy = false;
+    var msg = added ? 'Added ' + plural(added, 'photo') + '.' : 'No photos were added.';
+    if (full) msg += ' This phone is out of storage space.';
+    else if (failed) msg += ' ' + plural(failed, 'photo') + ' could not be saved.';
+    if (files.length < all.length) msg += ' Skipped ' + (all.length - files.length) + ' that were not images.';
+    toast(msg);
+    if (added && navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) { /* optional */ } }
+    updateUsage();
+  }
+
+  /* ---------- photos: move and delete ---------- */
+  function folderOptions() {
+    var out = [{ id: null, name: 'Gallery (top level)', depth: 0 }];
+    (function walk(parent, depth) {
+      childFolders(parent).forEach(function (f) { out.push({ id: f.id, name: f.name, depth: depth }); walk(f.id, depth + 1); });
+    })(null, 1);
+    return out;
+  }
+  function moveDialog(ids) {
+    if (!ids.length) return;
+    var photos = ids.map(function (i) { return state.photos.get(i); }).filter(Boolean);
+    var list = h('div', { class: 'pick' });
+    folderOptions().forEach(function (o) {
+      var already = photos.every(function (p) { return p.folderId === o.id; });
+      var b = h('button', { type: 'button', disabled: already, onClick: async function () {
+        try {
+          for (var i = 0; i < photos.length; i++) {
+            var np = Object.assign({}, state.photos.get(photos[i].id), { folderId: o.id });
+            await Store.updatePhoto(np);
+            state.photos.set(np.id, np);
+          }
+          closeModal(true);
+          var label = o.id ? state.folders.get(o.id).name : 'Gallery';
+          toast('Moved ' + plural(photos.length, 'photo') + ' to “' + label + '”');
+          photosLeftView(ids);
+        } catch (e) {
+          console.error(e);
+          closeModal(true);
+          toast('Could not move the photos. Please try again.');
+        }
+      } }, icon(o.id ? 'folder' : 'images'), h('span', { text: o.name }));
+      b.style.paddingLeft = (10 + o.depth * 18) + 'px';
+      list.append(b);
+    });
+    openModal({
+      title: 'Move ' + plural(photos.length, 'photo') + ' to…',
+      content: list,
+      actions: [cancelBtn()],
+      focus: list.querySelector('button:not(:disabled)')
+    });
+  }
+  function deletePhotosDialog(ids) {
+    if (!ids.length) return;
+    confirmDialog({
+      title: ids.length === 1 ? 'Delete this photo?' : 'Delete ' + ids.length + ' photos?',
+      message: 'They will be removed from this gallery and cannot be recovered.',
+      confirmLabel: 'Delete',
+      danger: true,
+      onConfirm: async function () {
+        await Store.removeTree([], ids);
+        ids.forEach(function (id) { state.photos.delete(id); dropThumbURL(id); });
+        toast('Deleted ' + plural(ids.length, 'photo'));
+        photosLeftView(ids);
+      }
+    });
+  }
+  /* photos that were deleted or moved out of the folder being viewed */
+  function photosLeftView(ids) {
+    var gone = new Set(ids);
+    if (lb.open) {
+      lb.ids = lb.ids.filter(function (i) { return !gone.has(i); });
+      if (!lb.ids.length) closeLightbox();
+      else { lb.i = Math.min(lb.i, lb.ids.length - 1); showLightbox(); }
+    }
+    state.selecting = false;
+    state.selected.clear();
+    render();
+  }
+
+  /* ---------- photo viewer ---------- */
+  var lb = { open: false, ids: [], i: 0, url: null, token: 0, opener: null };
+
+  function openLightbox(ids, id, opener) {
+    lb.open = true;
+    lb.ids = ids.slice();
+    lb.i = Math.max(0, lb.ids.indexOf(id));
+    lb.opener = opener || null;
+    $('#lb').hidden = false;
+    updateInert();
+    showLightbox();
+    $('#lb-close').focus();
+  }
+  function closeLightbox() {
+    if (!lb.open) return;
+    lb.open = false;
+    lb.token++;
+    if (lb.url) { URL.revokeObjectURL(lb.url); lb.url = null; }
+    var img = $('#lb-img');
+    img.removeAttribute('src');
+    $('#lb').hidden = true;
+    updateInert();
+    if (lb.opener && lb.opener.isConnected) lb.opener.focus();
+  }
+  async function showLightbox() {
+    var id = lb.ids[lb.i];
+    var p = state.photos.get(id);
+    if (!p) { closeLightbox(); return; }
+    var token = ++lb.token;
+    $('#lb-name').textContent = p.name;
+    var meta = [];
+    if (p.w && p.h) meta.push(p.w + ' × ' + p.h);
+    meta.push(fmtBytes(p.size));
+    meta.push('Added ' + fmtDate(p.addedAt));
+    $('#lb-meta').textContent = meta.join(' · ');
+    $('#lb-count').textContent = (lb.i + 1) + ' / ' + lb.ids.length;
+    $('#lb-prev').disabled = lb.ids.length < 2;
+    $('#lb-next').disabled = lb.ids.length < 2;
+    var img = $('#lb-img');
+    var msg = $('#lb-msg');
+    img.hidden = true;
+    img.removeAttribute('src');
+    img.alt = p.name;
+    msg.hidden = false;
+    msg.textContent = 'Loading…';
+    var blob = null;
+    try { blob = await Store.getOriginal(id); } catch (e) { blob = null; }
+    if (token !== lb.token) return;
+    if (lb.url) { URL.revokeObjectURL(lb.url); lb.url = null; }
+    if (!blob) { msg.textContent = 'This photo could not be loaded.'; return; }
+    lb.url = URL.createObjectURL(blob);
+    img.onload = function () { if (token === lb.token) { msg.hidden = true; img.hidden = false; } };
+    img.onerror = function () { if (token === lb.token) { img.hidden = true; msg.hidden = false; msg.textContent = 'This app cannot show this file type. The photo is still saved.'; } };
+    img.src = lb.url;
+  }
+  function stepLightbox(d) {
+    if (lb.ids.length < 2) return;
+    lb.i = (lb.i + d + lb.ids.length) % lb.ids.length;
+    showLightbox();
+  }
+
+  /* ---------- drag and drop ---------- */
+  var dragDepth = 0;
+  function hasFiles(e) { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1; }
+  function showDrop() {
+    var cur = state.cur ? state.folders.get(state.cur) : null;
+    var d = $('#drop');
+    d.textContent = 'Drop photos to add them to ' + (cur ? '“' + cur.name + '”' : 'the gallery');
+    d.hidden = false;
+  }
+
+  /* ---------- boot ---------- */
+  function boot() {
+    var mark = $('#brand-mark');
+    mark.append(icon('images', 20));
+    setBtn($('#lb-close'), 'x', '');
+    setBtn($('#lb-prev'), 'left', 'Previous');
+    setBtn($('#lb-move'), 'move', 'Move');
+    setBtn($('#lb-del'), 'trash', 'Delete');
+    setBtn($('#lb-next'), 'right', 'Next');
+
+    $('#lb-close').addEventListener('click', closeLightbox);
+    $('#lb-prev').addEventListener('click', function () { stepLightbox(-1); });
+    $('#lb-next').addEventListener('click', function () { stepLightbox(1); });
+    $('#lb-move').addEventListener('click', function () { moveDialog([lb.ids[lb.i]]); });
+    $('#lb-del').addEventListener('click', function () { deletePhotosDialog([lb.ids[lb.i]]); });
+
+    var sx = 0, sy = 0;
+    var stage = $('#lb-stage');
+    stage.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+    stage.addEventListener('touchend', function (e) {
+      var t = e.changedTouches[0];
+      var dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) stepLightbox(dx > 0 ? -1 : 1);
+    }, { passive: true });
+
+    document.addEventListener('keydown', function (e) {
+      if (modalState) {
+        if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
+        else if (e.key === 'Tab') {
+          var f = focusables(modalState.dlg);
+          if (!f.length) return;
+          var first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+        return;
+      }
+      if (lb.open) {
+        if (e.key === 'Escape') closeLightbox();
+        else if (e.key === 'ArrowLeft') stepLightbox(-1);
+        else if (e.key === 'ArrowRight') stepLightbox(1);
+      }
+    });
+
+    var input = $('#file-in');
+    input.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(input.files || []);
+      input.value = '';
+      if (files.length) addFiles(files);
+    });
+
+    window.addEventListener('dragenter', function (e) { if (hasFiles(e)) { e.preventDefault(); dragDepth++; showDrop(); } });
+    window.addEventListener('dragover', function (e) { if (hasFiles(e)) e.preventDefault(); });
+    window.addEventListener('dragleave', function (e) { if (hasFiles(e)) { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('#drop').hidden = true; } });
+    window.addEventListener('drop', function (e) {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth = 0;
+      $('#drop').hidden = true;
+      if (modalState || lb.open) return;
+      addFiles(e.dataTransfer.files);
+    });
+
+    window.addEventListener('hashchange', onRoute);
+
+    Store.open().then(function () { return Store.loadAll(); }).then(function (data) {
+      data.folders.forEach(function (f) { state.folders.set(f.id, f); });
+      data.photos.forEach(function (p) { state.photos.set(p.id, p); });
+    }).catch(function (e) {
+      console.error(e);
+      toast('Your saved photos could not be loaded.');
+    }).then(function () {
+      state.cur = parseHash();
+      render();
+      updateUsage();
+    });
+  }
+
+  /* called by the Android back button; true means the page handled it */
+  window.__back = function () {
+    if (modalState) { closeModal(); return true; }
+    if (lb.open) { closeLightbox(); return true; }
+    if (state.selecting) { setSelecting(false); return true; }
+    return false;
+  };
+
+  boot();
+})();
+</script>
+</body>
+</html>

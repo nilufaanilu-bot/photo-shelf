@@ -1,0 +1,52 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Put files into their folders
+        run: |
+          # Files were uploaded flat. "a__b__c.txt" becomes "a/b/c.txt".
+          for f in *__*; do
+            [ -f "$f" ] || continue
+            dest="${f//__//}"
+            mkdir -p "$(dirname "$dest")"
+            mv "$f" "$dest"
+          done
+          find app -type f | sort
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: gradle assembleDebug --no-daemon
+
+      - name: Keep a copy on this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhotoShelf-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish APK in Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk PhotoShelf.apk
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest PhotoShelf.apk --title "Photo Shelf APK" --notes "Latest build. Download PhotoShelf.apk and install it."
